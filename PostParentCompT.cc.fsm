@@ -15,6 +15,7 @@ $nodeclass PostParentCompT : StateNode {
             postStateCompletion();
         }
         
+        // the state node that calls the postParentCompletion() function
         $nodeclass PostComplete : StateNode : doStart {
             std::cout << "Posting parent completion...\n";
             postParentCompletion();
