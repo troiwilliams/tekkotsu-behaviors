@@ -1,0 +1,77 @@
+#include "Behaviors/StateMachine.h"
+
+$nodeclass GraspT : VisualRoutinesStateNode {
+    $provide Shape<CylinderData> target;
+
+    // this node class assumes the robot is looking at a red cylinder (i.e., the head will not move to
+    // search for a cylinder)
+    $nodeclass Look : MapBuilderNode(MapBuilderRequest::worldMap) : doStart {
+        std::cout << "looking for an object...\n";
+        mapreq.addObjectColor(cylinderDataType, "red");
+    }
+
+    $nodeclass ExamineResults : StateNode : doStart {
+        $reference GraspT::target;
+        // attempt to create a shape with the first cylinder seen in the world shape space
+        std::cout << "examining results...";
+        NEW_SHAPE(cylinder, CylinderData, find_if<CylinderData>(worldShS));
+        // check if the new shape is valid (this is how we know if robot saw a cylinder or not)
+        if (cylinder.isValid()) {
+            std::cout << "found something!\n";
+            target = cylinder;
+            postStateSuccess();
+        }
+        // the robot did not see any cylinders
+        else {
+            std::cout << "nada.\n";
+            postStateFailure();
+        }
+    }
+    
+    // tells the robot to move 500 millimeters forward
+    $nodeclass Fwd500 : PilotNode(PilotTypes::walk) : doStart {
+        std::cout << "executing forward walk...\n";
+        // dx is the forward walking distance
+        pilotreq.dx = 500.0f;
+    }
+
+    // tells the robot to rotate 30 degrees
+    $nodeclass Rotate30 : PilotNode(PilotTypes::walk) : doStart {
+        std::cout << "executing turn...\n";
+        // da is the amount of radians the robot should turn
+        pilotreq.da = AngSignPi(deg2rad(30.0f));
+    }
+
+    // attempts to go to the object and grab it
+    $nodeclass GoToAndGrab : GrasperNode(GrasperRequest::grasp) : doStart {
+        $reference GraspT::target;
+        std::cout << "executing grab...\n";
+        // print the target object's location and the agent's location
+        std::cout << "target is: " << target << " @ " << target->getCentroid() << std::endl;
+        std::cout << "agent location: " << VRmixin::theAgent->getCentroid() << std::endl;
+        // set the target object for the GrasperNode as "target"
+        graspreq.object = target;
+    }
+    
+    $setupmachine {
+        begin:      SpeechNode("begin")
+        look:       Look
+        examine:    ExamineResults
+        seeNada:    SpeechNode("did not see anything")
+        fwd:        Fwd500
+        turn:       Rotate30
+        grab:       GoToAndGrab
+        badGrab:    SpeechNode("failed grab")
+        goodGrab:   SpeechNode("success")
+        
+        begin =C=> look =C=> examine
+        
+        examine =S=> turn =C=> fwd =C=> grab
+        examine =F=> seeNada
+
+        grab =GRASP(noError)=> goodGrab
+        grab =GRASP=> badGrab
+    }
+} 
+
+REGISTER_BEHAVIOR(GraspT);
