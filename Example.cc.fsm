@@ -1,0 +1,21 @@
+#include "Behaviors/StateMachine.h"
+
+$nodeclass Example : StateNode {
+    
+    // a simple state node that prints "Hello world" to standard output, and posts a state completion
+    $nodeclass PrintHello : StateNode : doStart {
+        std::cout << "Hello world!\n";
+        postStateCompletion();
+    }
+    
+    $setupmachine {
+        hello:      PrintHello
+        sayHello:   SpeechNode("Hello world")
+        bark:       SoundNode("barkmed.wav")
+        done:       SpeechNode("done")
+        
+        hello =C=> sayHello =C=> bark =C=> done
+    }
+}
+
+REGISTER_BEHAVIOR(Example);
