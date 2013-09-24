@@ -1,0 +1,51 @@
+#include "Behaviors/StateMachine.h"
+
+// this behavior is an example of how to use the postParentCompletion() function to transition from
+// one node class (containing nested classes) to another node class (with no nested classes)
+$nodeclass PostParentComp : StateNode {
+    
+    // this node class is a simple state node that contains a set of nested node classes performing some
+    // function (e.g. speaking and print to standard output). the final node calls the
+    // postParentCompletion function which tells PostParentCompT that the node class SayAndPlay is
+    // complete.
+    $nodeclass SayAndPlay : StateNode {
+        
+        $nodeclass WhatAmIDoing : StateNode : doStart {
+            std::cout << "I am inside the WhatAmIDoing StateNode class...\n";
+            postStateCompletion();
+        }
+        
+        // the state node that calls the postParentCompletion() function
+        $nodeclass PostComplete : StateNode : doStart {
+            std::cout << "Posting parent completion...\n";
+            postParentCompletion();
+        }
+        
+        $setupmachine {
+            waid:   WhatAmIDoing
+            hello:  SpeechNode("hello")
+            bark:   SpeechNode("bark")
+            post:   PostComplete
+            
+            waid =C=> hello =C=> bark =C=> post
+        }
+    }
+    
+    $nodeclass GoodBye : StateNode : doStart {
+        std::cout << "The parent completion test was successful!\n";
+        postStateCompletion();
+    }
+    
+    // start with the node class containing the nested node classes, then transition to the other state
+    // node with no nested classes.
+    $setupmachine {
+        sap:    SayAndPlay
+        bye:    GoodBye
+        exit:   SpeechNode("exiting")
+        
+        sap =C=> bye =C=> exit
+    }
+
+}
+
+REGISTER_BEHAVIOR(PostParentComp);
