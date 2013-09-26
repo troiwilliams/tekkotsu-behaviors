@@ -1,0 +1,19 @@
+#include "Behaviors/StateMachine.h"
+
+// After each bark, howl unless petted, forever
+$nodeclass AnnoyingDog : StateNode {
+
+    $setupmachine {
+        loop:   SoundNode("barkmed.wav")
+        wait:   StateNode
+        howl:   SoundNode("howl.wav")
+
+        loop =B=> wait
+        loop =T(5000)=> howl
+
+        wait =T(15000)=> loop
+        howl =C=> wait
+    }
+}
+
+REGISTER_BEHAVIOR(AnnoyingDog);
